@@ -1,0 +1,15 @@
+# netlify.toml
+
+[build]
+  # Comando para construir o site usando Vite
+  command = "vite build"
+  
+  # Diretório onde os arquivos prontos para produção são salvos
+  publish = "dist"
+
+# Regra de redirecionamento para Single-Page Applications (SPA)
+# Essencial para que a navegação do lado do cliente funcione corretamente no deploy.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
