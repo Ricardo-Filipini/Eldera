@@ -1,22 +1,28 @@
-import { GoogleGenAI, Operation, GenerateContentResponse, Modality, Type, Content } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Modality, Type, Content } from "@google/genai";
 
 const getGenAI = () => {
-    const apiKey = process.env.API_KEY;
+    const apiKey = import.meta.env.VITE_API_KEY;
     if (!apiKey) {
-        throw new Error("API_KEY environment variable not set");
+        throw new Error("VITE_API_KEY environment variable not set");
     }
     return new GoogleGenAI({ apiKey });
 }
 
-const fileToGenerativePart = async (file: File) => {
-  const base64EncodedDataPromise = new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-  return {
-    inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
-  };
+const imageUrlToGenerativePart = async (url: string) => {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch image from ${url}`);
+    }
+    const blob = await response.blob();
+    const base64data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+    return {
+        inlineData: { data: base64data, mimeType: blob.type },
+    };
 };
 
 export const generateNickname = async (): Promise<string> => {
@@ -34,26 +40,9 @@ export const generateNickname = async (): Promise<string> => {
   }
 };
 
-export const generateImage = async (prompt: string, aspectRatio: string): Promise<string> => {
+export const generateImageWithReference = async (prompt: string, imageUrl: string): Promise<string> => {
     const ai = getGenAI();
-    const fullPrompt = `${prompt}, digital art, high quality, vibrant colors`;
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: fullPrompt,
-        config: {
-            numberOfImages: 1,
-            outputMimeType: 'image/jpeg',
-            aspectRatio: aspectRatio as "1:1" | "3:4" | "4:3" | "9:16" | "16:9",
-        },
-    });
-
-    const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-    return `data:image/jpeg;base64,${base64ImageBytes}`;
-};
-
-export const editImage = async (prompt: string, image: File): Promise<string> => {
-    const ai = getGenAI();
-    const imagePart = await fileToGenerativePart(image);
+    const imagePart = await imageUrlToGenerativePart(imageUrl);
     
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -69,48 +58,9 @@ export const editImage = async (prompt: string, image: File): Promise<string> =>
             return `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
         }
     }
-    throw new Error("No image generated from edit.");
+    throw new Error("Nenhuma imagem gerada.");
 };
 
-export const generateVideo = async (prompt: string, aspectRatio: "16:9" | "9:16", image?: File): Promise<Operation> => {
-    const ai = getGenAI();
-    
-    let imagePayload;
-    if (image) {
-        const imagePart = await fileToGenerativePart(image);
-        imagePayload = {
-            imageBytes: imagePart.inlineData.data,
-            mimeType: imagePart.inlineData.mimeType,
-        };
-    }
-    
-    const operation = await ai.models.generateVideos({
-        model: 'veo-3.1-fast-generate-preview',
-        prompt,
-        image: imagePayload,
-        config: {
-            numberOfVideos: 1,
-            resolution: '720p',
-            aspectRatio,
-        }
-    });
-    return operation;
-};
-
-export const checkVideoStatus = async (operation: Operation): Promise<Operation> => {
-    const ai = getGenAI();
-    return await ai.operations.getVideosOperation({ operation });
-};
-
-export const getVideoUrl = async (downloadLink: string): Promise<string> => {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-        throw new Error("API_KEY environment variable not set for video fetch");
-    }
-    const response = await fetch(`${downloadLink}&key=${apiKey}`);
-    const blob = await response.blob();
-    return URL.createObjectURL(blob);
-};
 
 // Adventure Game Logic
 export interface AdventureResponse {

@@ -18,14 +18,17 @@ const App: React.FC = () => {
     const timer = setTimeout(() => setShowFloatingImages(true), 1000);
     return () => clearTimeout(timer);
   }, []);
+  
+  // Duplicate the array to have more floating images
+  const allFloatingImages = [...eldinFloatingImages, ...eldinFloatingImages];
 
   return (
     <div className="relative min-h-screen bg-gray-900 text-white overflow-x-hidden font-sans bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-slate-800 via-gray-900 to-black">
-      {showFloatingImages && eldinFloatingImages.map((src, index) => (
+      {showFloatingImages && allFloatingImages.map((src, index) => (
         <FloatingImage key={index} src={src} index={index} />
       ))}
       
-      <div className="relative z-10">
+      <div className="relative z-20">
         <Header />
         <main className="container mx-auto px-4 py-8">
           <Hero />

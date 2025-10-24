@@ -1,28 +1,41 @@
-
-import React from 'react';
+import React, { useState, CSSProperties } from 'react';
 
 interface FloatingImageProps {
   src: string;
   index: number;
 }
 
-export const FloatingImage: React.FC<FloatingImageProps> = ({ src, index }) => {
-  const styles: React.CSSProperties[] = [
-    { top: '10vh', left: '5vw', width: '80px', animationDuration: '18s' },
-    { top: '20vh', left: '85vw', width: '100px', animationDuration: '14s' },
-    { top: '70vh', left: '15vw', width: '60px', animationDuration: '20s' },
-    { top: '80vh', left: '90vw', width: '120px', animationDuration: '16s' },
-    { top: '40vh', left: '50vw', width: '70px', animationDuration: '22s' },
-  ];
+const createRandomStyle = (seed: number): CSSProperties => {
+  const size = 60 + (seed % 7) * 10; // 60px to 120px
+  return {
+    top: `${10 + (seed % 81)}vh`, // 10% to 90%
+    left: `${5 + (seed % 91)}vw`, // 5% to 95%
+    width: `${size}px`,
+    animationDuration: `${14 + (seed % 10)}s`,
+    zIndex: 10,
+  };
+};
 
-  const style = styles[index % styles.length];
+export const FloatingImage: React.FC<FloatingImageProps> = ({ src, index }) => {
+  const [style, setStyle] = useState<CSSProperties>(() => createRandomStyle(index));
+  const [isPopped, setIsPopped] = useState(false);
+
+  const handleClick = () => {
+    setIsPopped(true);
+    setTimeout(() => {
+      setIsPopped(false);
+      // Use Date.now() for more randomness on subsequent clicks
+      setStyle(createRandomStyle(Date.now() + index)); 
+    }, 300); // duration of the pop animation
+  };
 
   return (
     <img
       src={src}
       alt="Eldin's floating face"
-      className="floating absolute rounded-full opacity-20 pointer-events-none"
+      className={`floating fixed rounded-full opacity-25 cursor-pointer transition-all duration-500 ${isPopped ? 'popping' : ''}`}
       style={style}
+      onClick={handleClick}
     />
   );
 };
