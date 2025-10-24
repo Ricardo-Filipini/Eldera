@@ -1,0 +1,17 @@
+# netlify.toml
+
+[build]
+  # Este comando assume que você está usando Vite, que é o padrão para este tipo de projeto.
+  # Se você usar 'create-react-app', mude para "npm run build".
+  command = "vite build"
+  
+  # O diretório onde os arquivos compilados do site serão colocados.
+  publish = "dist"
+
+# Esta regra é essencial para aplicativos de página única (SPAs) como o seu.
+# Ela redireciona todas as solicitações para o index.html, permitindo que o React
+# cuide do roteamento no lado do cliente.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
