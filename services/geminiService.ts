@@ -1,13 +1,22 @@
 import { GoogleGenAI, Content, Type, Modality } from '@google/genai';
 
-// FIX: Use process.env.API_KEY as per the coding guidelines. This is expected to be configured in the deployment environment (Netlify).
-const API_KEY = process.env.API_KEY;
+const API_KEY = import.meta.env.VITE_API_KEY;
 
-if (!API_KEY) {
-  console.error("API_KEY environment variable not set. The app's AI features will not work.");
-}
+// A consistent error message for missing API key.
+const API_KEY_ERROR_MESSAGE = "A variável de ambiente VITE_API_KEY não foi configurada. Adicione-a nas configurações do seu site no Netlify.";
 
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+// Lazy initialization for the GoogleGenAI instance
+let ai: GoogleGenAI | null = null;
+const getAiInstance = () => {
+    if (!API_KEY) {
+        throw new Error(API_KEY_ERROR_MESSAGE);
+    }
+    if (!ai) {
+        ai = new GoogleGenAI({ apiKey: API_KEY });
+    }
+    return ai;
+};
+
 
 const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -39,11 +48,12 @@ async function urlToGenerativePart(url: string, mimeType: string) {
     };
 }
 
+
 // Function for NicknameGenerator.tsx
 export const generateNickname = async (traits: string): Promise<string> => {
-    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
     try {
-        const response = await ai.models.generateContent({
+        const aiInstance = getAiInstance();
+        const response = await aiInstance.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Baseado nos traços de personalidade de uma pessoa lendária chamada Eldin, gere um apelido engraçado e criativo para ele. Os traços são: ${traits}. O apelido deve ser curto e impactante. Retorne apenas o apelido, sem nenhuma outra formatação ou texto.`,
             config: {
@@ -52,19 +62,20 @@ export const generateNickname = async (traits: string): Promise<string> => {
             }
         });
         return response.text.trim();
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error generating nickname:", error);
+        if (error.message === API_KEY_ERROR_MESSAGE) throw error;
         throw new Error("A IA está muito ocupada rindo das lendas do Eldin para criar um apelido agora. Tente novamente.");
     }
 };
 
 // Function for MemeGenerator.tsx
 export const generateImageWithReference = async (prompt: string, imageUrl: string): Promise<string> => {
-    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
-    try {
+     try {
+        const aiInstance = getAiInstance();
         const imagePart = await urlToGenerativePart(imageUrl, 'image/jpeg');
         
-        const response = await ai.models.generateContent({
+        const response = await aiInstance.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: {
                 parts: [
@@ -85,6 +96,7 @@ export const generateImageWithReference = async (prompt: string, imageUrl: strin
         throw new Error("A IA não conseguiu gerar a imagem. Talvez a ideia seja lendária demais.");
     } catch (error: any) {
         console.error("Error generating image:", error);
+        if (error.message === API_KEY_ERROR_MESSAGE) throw error;
         if (error.toString().includes('SAFETY')) {
              throw new Error("A IA se recusou a criar essa imagem por motivos de segurança. Tente uma zueira mais leve.");
         }
@@ -112,9 +124,9 @@ const adventureSchema = {
 
 // Function for AdventureGame.tsx
 export const generateAdventureStep = async (history: Content[]): Promise<AdventureResponse> => {
-    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
     try {
-        const response = await ai.models.generateContent({
+        const aiInstance = getAiInstance();
+        const response = await aiInstance.models.generateContent({
             model: 'gemini-2.5-pro',
             contents: history,
             config: {
@@ -125,17 +137,18 @@ export const generateAdventureStep = async (history: Content[]): Promise<Adventu
         });
         const jsonText = response.text.trim();
         return JSON.parse(jsonText) as AdventureResponse;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error generating adventure step:", error);
+        if (error.message === API_KEY_ERROR_MESSAGE) throw error;
         throw new Error("A aventura bugou. A lenda do Eldin foi tão épica que quebrou a IA. Tente de novo.");
     }
 };
 
 // Function for AdventureGame.tsx
 export const generateAdventureImage = async (prompt: string): Promise<string> => {
-    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
     try {
-        const response = await ai.models.generateContent({
+        const aiInstance = getAiInstance();
+        const response = await aiInstance.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: {
                 parts: [{ text: prompt }],
@@ -153,7 +166,8 @@ export const generateAdventureImage = async (prompt: string): Promise<string> =>
         throw new Error("A IA não conseguiu visualizar a cena. A imaginação dela não é tão fértil quanto a do Eldin.");
     } catch (error: any) {
         console.error("Error generating adventure image:", error);
-         if (error.toString().includes('SAFETY')) {
+        if (error.message === API_KEY_ERROR_MESSAGE) throw error;
+        if (error.toString().includes('SAFETY')) {
              throw new Error("A IA se recusou a ilustrar essa cena por motivos de segurança. A aventura do Eldin é ousada demais.");
         }
         throw new Error(error.message || "Falha ao gerar a imagem da aventura.");

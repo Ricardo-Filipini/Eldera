@@ -26,4 +26,13 @@ declare global {
   interface Window {
     aistudio?: AIStudio;
   }
+
+  // Add type definitions for Vite environment variables
+  interface ImportMetaEnv {
+    readonly VITE_API_KEY: string;
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
 }
