@@ -1,13 +1,15 @@
 import { GoogleGenAI, Content, Type, Modality } from '@google/genai';
 
-const API_KEY = import.meta.env.VITE_API_KEY;
-
 // A consistent error message for missing API key.
 const API_KEY_ERROR_MESSAGE = "A variável de ambiente VITE_API_KEY não foi configurada. Adicione-a nas configurações do seu site no Netlify.";
 
 // Lazy initialization for the GoogleGenAI instance
 let ai: GoogleGenAI | null = null;
 const getAiInstance = () => {
+    // Access the API key here, inside the function, to prevent crashing on module load.
+    // Use optional chaining to safely access the property.
+    const API_KEY = import.meta.env?.VITE_API_KEY;
+
     if (!API_KEY) {
         throw new Error(API_KEY_ERROR_MESSAGE);
     }
