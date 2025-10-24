@@ -1,127 +1,161 @@
-import { GoogleGenAI, GenerateContentResponse, Modality, Type, Content } from "@google/genai";
+import { GoogleGenAI, Content, Type, Modality } from '@google/genai';
 
-const getGenAI = () => {
-    const apiKey = import.meta.env.VITE_API_KEY;
-    if (!apiKey) {
-        throw new Error("VITE_API_KEY environment variable not set");
-    }
-    return new GoogleGenAI({ apiKey });
+// FIX: Use process.env.API_KEY as per the coding guidelines. This is expected to be configured in the deployment environment (Netlify).
+const API_KEY = process.env.API_KEY;
+
+if (!API_KEY) {
+  console.error("API_KEY environment variable not set. The app's AI features will not work.");
 }
 
-const imageUrlToGenerativePart = async (url: string) => {
+const ai = new GoogleGenAI({ apiKey: API_KEY! });
+
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+            resolve(reader.result.split(',')[1]);
+        } else {
+            reject(new Error("Failed to read blob as base64 string."));
+        }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+async function urlToGenerativePart(url: string, mimeType: string) {
     const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(`Failed to fetch image from ${url}`);
+        throw new Error(`Failed to fetch image from ${url}: ${response.statusText}`);
     }
     const blob = await response.blob();
-    const base64data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
+    const base64Data = await blobToBase64(blob);
     return {
-        inlineData: { data: base64data, mimeType: blob.type },
-    };
-};
-
-export const generateNickname = async (): Promise<string> => {
-  try {
-    const ai = getGenAI();
-    const prompt = "Gere um apelido engraçado e lendário para um amigo chamado Eldin. Ele é um engenheiro mecânico festeiro, inteligente, pegador, maconheiro gente boa, e pai de dois filhos. Pense em algo no estilo 'O Monstro do InterUFG'. Seja criativo e use humor. Retorne apenas o apelido, sem mais texto.";
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt
-    });
-    return response.text.trim();
-  } catch (error) {
-    console.error("Error generating nickname:", error);
-    return "O Cérebro de Gênio Travou";
-  }
-};
-
-export const generateImageWithReference = async (prompt: string, imageUrl: string): Promise<string> => {
-    const ai = getGenAI();
-    const imagePart = await imageUrlToGenerativePart(imageUrl);
-    
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [imagePart, { text: prompt }] },
-        config: {
-            responseModalities: [Modality.IMAGE],
+        inlineData: {
+            data: base64Data,
+            mimeType,
         },
-    });
+    };
+}
 
-    for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-            const base64ImageBytes: string = part.inlineData.data;
-            return `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
-        }
+// Function for NicknameGenerator.tsx
+export const generateNickname = async (traits: string): Promise<string> => {
+    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Baseado nos traços de personalidade de uma pessoa lendária chamada Eldin, gere um apelido engraçado e criativo para ele. Os traços são: ${traits}. O apelido deve ser curto e impactante. Retorne apenas o apelido, sem nenhuma outra formatação ou texto.`,
+            config: {
+                temperature: 0.9,
+                maxOutputTokens: 20,
+            }
+        });
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error generating nickname:", error);
+        throw new Error("A IA está muito ocupada rindo das lendas do Eldin para criar um apelido agora. Tente novamente.");
     }
-    throw new Error("Nenhuma imagem gerada.");
 };
 
+// Function for MemeGenerator.tsx
+export const generateImageWithReference = async (prompt: string, imageUrl: string): Promise<string> => {
+    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
+    try {
+        const imagePart = await urlToGenerativePart(imageUrl, 'image/jpeg');
+        
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [
+                    imagePart,
+                    { text: prompt },
+                ],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE],
+            },
+        });
 
-// Adventure Game Logic
+        const firstPart = response.candidates?.[0]?.content?.parts[0];
+        if (firstPart && firstPart.inlineData) {
+            const base64ImageBytes: string = firstPart.inlineData.data;
+            return `data:image/png;base64,${base64ImageBytes}`;
+        }
+        throw new Error("A IA não conseguiu gerar a imagem. Talvez a ideia seja lendária demais.");
+    } catch (error: any) {
+        console.error("Error generating image:", error);
+        if (error.toString().includes('SAFETY')) {
+             throw new Error("A IA se recusou a criar essa imagem por motivos de segurança. Tente uma zueira mais leve.");
+        }
+        throw new Error(error.message || "Falha ao gerar a imagem. A IA deve estar de ressaca.");
+    }
+};
+
 export interface AdventureResponse {
     narrative: string;
     choices: string[];
-    isFinal: boolean;
     imagePrompt: string;
+    isFinal: boolean;
 }
 
-const adventureGameSystemInstruction = `Você é um mestre de jogo sarcástico e bem-humorado, criando uma aventura de 'escolha seu caminho' para o lendário Eldin. O objetivo: 'Ajudar Eldin a conquistar uma garota na balada'. O tom é de comédia adulta, zueira pesada, e alinhado com a persona de Eldin: o 'Monstro do InterUFG', pegador (quantidade > qualidade), engenheiro, maconheiro e macho alfa. As situações devem ser absurdas e as escolhas, hilárias. A história deve terminar de forma cômica e inesperada. Responda SEMPRE em JSON, seguindo o schema.`;
+const adventureSchema = {
+    type: Type.OBJECT,
+    properties: {
+        narrative: { type: Type.STRING, description: "A descrição da cena atual da aventura, narrando o que acontece com Eldin. Deve ser em português do Brasil." },
+        choices: { type: Type.ARRAY, description: "Uma lista de 2 a 3 opções de ações que o jogador pode tomar. Devem ser curtas e diretas. Em português do Brasil.", items: { type: Type.STRING } },
+        imagePrompt: { type: Type.STRING, description: "Um prompt em inglês, conciso e descritivo, para um modelo de IA gerar uma imagem que ilustra a 'narrativa'. Ex: 'A man in a dark party looking at two women, digital art'." },
+        isFinal: { type: Type.BOOLEAN, description: "Um booleano que é 'true' se este for o final da aventura, e 'false' caso contrário." },
+    },
+    required: ["narrative", "choices", "imagePrompt", "isFinal"],
+};
 
+// Function for AdventureGame.tsx
 export const generateAdventureStep = async (history: Content[]): Promise<AdventureResponse> => {
-    const ai = getGenAI();
-    
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-pro",
-        contents: history,
-        config: {
-            systemInstruction: adventureGameSystemInstruction,
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    narrative: { type: Type.STRING, description: "O próximo parágrafo da história." },
-                    choices: { type: Type.ARRAY, items: { type: Type.STRING }, description: "De 2 a 3 opções de escolha para o jogador." },
-                    isFinal: { type: Type.BOOLEAN, description: "Verdadeiro se este for o final da história." },
-                    imagePrompt: { type: Type.STRING, description: "Um prompt curto e visual para gerar uma ilustração para a cena. Estilo cartoon/HQ." }
-                },
-                required: ["narrative", "choices", "isFinal", "imagePrompt"],
-            }
-        }
-    });
-
-    const jsonText = response.text.trim();
+    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
     try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: history,
+            config: {
+                systemInstruction: `Você é um mestre de RPG para um jogo de texto sobre um personagem lendário chamado Eldin, um engenheiro brasileiro conhecido por ser um "macho alfa reprodutor", festeiro, e engraçado. O tom do jogo é de comédia e zueira, baseado nas "lendas" de Eldin. A história deve ser contínua. Para cada passo, você deve fornecer uma narrativa, 2 ou 3 escolhas para o jogador, um prompt para gerar uma imagem, e um booleano indicando se a história terminou. Responda SEMPRE em JSON, seguindo o schema.`,
+                responseMimeType: 'application/json',
+                responseSchema: adventureSchema,
+            },
+        });
+        const jsonText = response.text.trim();
         return JSON.parse(jsonText) as AdventureResponse;
-    } catch (e) {
-        console.error("Failed to parse adventure step JSON:", jsonText, e);
-        throw new Error("A IA retornou uma resposta inválida. Tente novamente.");
+    } catch (error) {
+        console.error("Error generating adventure step:", error);
+        throw new Error("A aventura bugou. A lenda do Eldin foi tão épica que quebrou a IA. Tente de novo.");
     }
-}
+};
 
+// Function for AdventureGame.tsx
 export const generateAdventureImage = async (prompt: string): Promise<string> => {
-    const ai = getGenAI();
-    const fullPrompt = `${prompt}, in a vibrant comic book art style, funny`;
-
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-            parts: [{ text: fullPrompt }],
-        },
-        config: {
-            responseModalities: [Modality.IMAGE],
-        },
-    });
-
-    for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-            const base64ImageBytes: string = part.inlineData.data;
-            return `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
+    if (!API_KEY) throw new Error("A chave da API do Gemini não foi configurada.");
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [{ text: prompt }],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE],
+            },
+        });
+        
+        const firstPart = response.candidates?.[0]?.content?.parts[0];
+        if (firstPart && firstPart.inlineData) {
+            const base64ImageBytes: string = firstPart.inlineData.data;
+            return `data:image/png;base64,${base64ImageBytes}`;
         }
+        throw new Error("A IA não conseguiu visualizar a cena. A imaginação dela não é tão fértil quanto a do Eldin.");
+    } catch (error: any) {
+        console.error("Error generating adventure image:", error);
+         if (error.toString().includes('SAFETY')) {
+             throw new Error("A IA se recusou a ilustrar essa cena por motivos de segurança. A aventura do Eldin é ousada demais.");
+        }
+        throw new Error(error.message || "Falha ao gerar a imagem da aventura.");
     }
-    throw new Error("Nenhuma imagem de aventura foi gerada.");
 };

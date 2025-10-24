@@ -1,34 +1,57 @@
-// IMPORTANT: All paths have been double-checked against your file list.
+// As imagens estão em uma pasta na raiz do projeto do git, chamada Imagens
 
-export const eldinHeroImage = '/midia/IMG-20240413-WA0046.jpg';
+export const eldinHeroImage = '/Imagens/eldin_hero.jpg';
 
-export const eldinFloatingImages = [
-    '/midia/STK-20240520-WA0003.webp', // Mustache
-    '/midia/STK-20250204-WA0020.webp', // Goggles
-    '/midia/STK-20240426-WA0012.webp', // Statue
-    '/midia/STK-20240619-WA0016.webp', // Venus
-    '/midia/STK-20250401-WA0092.webp', // Dark Statue
-    '/midia/STK-20240226-WA0010.webp', // Cap
-    '/midia/STK-20250401-WA0089.webp', // Light Venus
+export const eldinFloatingImages: string[] = [
+    '/Imagens/floating_1.png',
+    '/Imagens/floating_2.png',
+    '/Imagens/floating_3.png',
+    '/Imagens/floating_4.png',
+    '/Imagens/floating_5.png',
+    '/Imagens/floating_6.png',
+    '/Imagens/floating_7.png',
 ];
 
-export const legendaryMomentsMedia = [
-    { type: 'image', src: '/midia/IMG-20250413-WA0022.jpg', caption: 'Monstro do InterUFG em seu habitat natural.' },
-    { type: 'image', src: '/midia/IMG-20251024-WA0019.jpg', caption: 'O famoso pênalti, de óculos escuros e virado.' },
-    { type: 'image', src: '/midia/IMG-20240226-WA0011.jpg', caption: 'Quantidade > Qualidade: A Doutrina Eldin.' },
-    { type: 'image', src: '/midia/IMG-20240619-WA0015.jpg', caption: 'O Rei da Festa, sempre bem acompanhado.'},
-    { type: 'image', src: '/midia/IMG-20251024-WA0018.jpg', caption: 'Engenheiro Mecânico com muito amor (e cerveja).'},
-    { type: 'image', src: '/midia/1714149372006.png', caption: 'O início de uma nova dinastia. Macho alfa reprodutor!'}
+export const editableImages: string[] = [
+    '/Imagens/edit_1.jpg',
+    '/Imagens/edit_2.jpg',
+    '/Imagens/edit_3.jpg',
+    '/Imagens/edit_4.jpg',
+    '/Imagens/edit_5.jpg',
+    '/Imagens/edit_6.jpg',
+    '/Imagens/edit_7.jpg',
+    '/Imagens/edit_8.jpg',
 ];
 
-// A selection of images for the meme editor
-export const editableImages = [
-    '/midia/1714148961740.png',
-    '/midia/IMG-20240413-WA0046.jpg',
-    '/midia/IMG-20251024-WA0004.jpg',
-    '/midia/IMG-20250413-WA0022.jpg',
-    '/midia/IMG-20240710-WA0000.jpg',
-    '/midia/IMG-20251024-WA0020.jpg',
-    '/midia/STK-20240520-WA0003.webp',
-    '/midia/STK-20250204-WA0020.webp',
+export const legendaryMomentsMedia: { src: string; caption: string; type: 'image' }[] = [
+    {
+        src: '/Imagens/legend_1.jpg',
+        caption: 'O lendário pênalti no InterUFG. Visão turva, precisão cirúrgica.',
+        type: 'image'
+    },
+    {
+        src: '/Imagens/legend_2.jpg',
+        caption: 'Momento de profunda reflexão filosófica sobre a vida, o universo e a próxima cerveja.',
+        type: 'image'
+    },
+    {
+        src: '/Imagens/legend_3.jpg',
+        caption: 'Comprovando a diretriz biológica de ser um macho alfa reprodutor.',
+        type: 'image'
+    },
+    {
+        src: '/Imagens/legend_4.jpg',
+        caption: 'Em seu habitat natural: a zueira.',
+        type: 'image'
+    },
+    {
+        src: '/Imagens/legend_5.jpg',
+        caption: 'O óculos escuro, acessório indispensável para o sucesso na caça.',
+        type: 'image'
+    },
+    {
+        src: '/Imagens/legend_6.jpg',
+        caption: 'Exibindo o troféu de mais uma conquista bem-sucedida.',
+        type: 'image'
+    }
 ];

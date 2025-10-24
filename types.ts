@@ -26,13 +26,4 @@ declare global {
   interface Window {
     aistudio?: AIStudio;
   }
-
-  // FIX: Add types for Vite environment variables to resolve 'import.meta.env' error.
-  interface ImportMetaEnv {
-    readonly VITE_API_KEY: string;
-  }
-
-  interface ImportMeta {
-    readonly env: ImportMetaEnv;
-  }
 }
