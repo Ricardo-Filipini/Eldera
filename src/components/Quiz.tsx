@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { quizQuestions } from '../constants';
-import { QuizQuestion } from '../types';
 import { SectionWrapper } from './SectionWrapper';
 
 export const Quiz: React.FC = () => {

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { SectionWrapper } from './SectionWrapper';
 import { LoadingSpinner } from './LoadingSpinner';
 import { generateAdventureStep, generateAdventureImage, AdventureResponse } from '../services/geminiService';
-import { AdventureStep } from '../types';
 import { Content } from '@google/genai';
 
 export const AdventureGame: React.FC = () => {

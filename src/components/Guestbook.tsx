@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { SectionWrapper } from './SectionWrapper';
-import { GuestbookEntry } from '../types';
 
 const GUESTBOOK_STORAGE_KEY = 'eldin_guestbook';
 
