@@ -1,3 +1,6 @@
+// FIX: Import QuizQuestion type as types.ts is now a module.
+import type { QuizQuestion } from './types';
+
 export const quizQuestions: QuizQuestion[] = [
   {
     question: "Qual a filosofia de Eldin sobre relacionamentos?",

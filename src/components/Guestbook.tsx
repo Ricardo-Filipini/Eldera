@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { SectionWrapper } from './SectionWrapper';
+// FIX: Import GuestbookEntry type as types.ts is now a module.
+import type { GuestbookEntry } from '../types';
 
 const GUESTBOOK_STORAGE_KEY = 'eldin_guestbook';
 

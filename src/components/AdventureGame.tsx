@@ -3,6 +3,8 @@ import { SectionWrapper } from './SectionWrapper';
 import { LoadingSpinner } from './LoadingSpinner';
 import { generateAdventureStep, generateAdventureImage, AdventureResponse } from '../services/geminiService';
 import { Content } from '@google/genai';
+// FIX: Import AdventureStep type as types.ts is now a module.
+import type { AdventureStep } from '../types';
 
 export const AdventureGame: React.FC = () => {
     const [uiHistory, setUiHistory] = useState<AdventureStep[]>([]);
